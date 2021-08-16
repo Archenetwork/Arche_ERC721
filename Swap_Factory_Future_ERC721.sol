@@ -256,14 +256,9 @@ contract D_Swap is Owned {
         if(m_Token_Type_Head== (uint256)( keccak256(abi.encodePacked( "ERC20"))) )
         {
             
-       
-            bool res=false;
-            res=ERC20Interface(m_Token_Head).transferFrom(msg.sender, address(this),m_Total_Amount_Head);
-            if(res ==false)
-            {
-                //if failed revert transaction;
-                 revert();
-            }
+            // Deflationary token is not supported 
+            Receive_Token(m_Token_Head,m_Total_Amount_Head,msg.sender);
+
         }
         if(m_Token_Type_Head==(uint256)( keccak256(abi.encodePacked( "ERC721"))) )
         {
@@ -298,15 +293,9 @@ contract D_Swap is Owned {
         
         if(m_Token_Type_Tail==(uint256)( keccak256(abi.encodePacked( "ERC20"))))
         {
+            // Deflationary token is not supported 
+            Receive_Token(m_Token_Tail,m_Total_Amount_Tail,msg.sender);
             
-       
-            bool res=false;
-            res=ERC20Interface(m_Token_Tail).transferFrom(msg.sender, address(this),m_Total_Amount_Tail);
-            if(res ==false)
-            {
-                //if failed revert transaction;
-                 revert();
-            }
         }
         if(m_Token_Type_Tail==(uint256)( keccak256(abi.encodePacked( "ERC721"))) )
         {
@@ -341,15 +330,12 @@ contract D_Swap is Owned {
         if(m_Token_Type_Head== (uint256)( keccak256(abi.encodePacked( "ERC20"))) )
         {
             
-       
-            bool res=false;
-            
             Charging_Transfer_ERC20(m_Token_Head,m_Rival,m_Total_Amount_Head);
           
         }
         if(m_Token_Type_Head==(uint256)( keccak256(abi.encodePacked( "ERC721"))) )
         {
-            bool res=false;
+            
             ERC721Interface(m_Token_Head).transferFrom(address(this),m_Rival, m_Total_Amount_Head);
             if(ERC721Interface(m_Token_Head).ownerOf(m_Total_Amount_Head) != m_Rival)
             {
@@ -362,14 +348,13 @@ contract D_Swap is Owned {
         {
             
        
-            bool res=false;
             
             Charging_Transfer_ERC20(m_Token_Tail,owner,m_Total_Amount_Tail);
           
         }
         if(m_Token_Type_Tail==(uint256)( keccak256(abi.encodePacked( "ERC721"))) )
         {
-            bool res=false;
+           
             ERC721Interface(m_Token_Tail).transferFrom(address(this),owner, m_Total_Amount_Tail);
             if(ERC721Interface(m_Token_Tail).ownerOf(m_Total_Amount_Tail) != owner)
             {
@@ -395,20 +380,18 @@ contract D_Swap is Owned {
 
     function Charging_Transfer_ERC20 (address token ,address to ,uint256 amount)private
     {
+        uint256 t_balance_old = ERC20Interface(token).balanceOf(address(this));
         (address tc_addr)= D_Swap_Main(m_DSwap_Main_Address).m_Trading_Charge_Lib();
         (address collecter_addr)= D_Swap_Main(m_DSwap_Main_Address).m_Address_of_Token_Collecter();
         uint256 exactly_amount=Trading_Charge(tc_addr).Amount(amount,to);
         
         
-        bool res=true;
+       
         if(exactly_amount>=1)
         {
-            res=ERC20Interface(token).transfer(to,exactly_amount);
+            ERC20Interface(token).transfer(to,exactly_amount);
         }
-        if(res ==false)
-        {
-             revert();
-        }
+
         
         if(amount.sub(exactly_amount)>=1)
         {
@@ -472,6 +455,17 @@ contract D_Swap is Owned {
     fallback() external payable {}
     receive() external payable { 
     //revert();
+    }
+    function Receive_Token(address addr,uint256 value,address from) internal
+    {
+        uint256 t_balance_old = ERC20Interface(addr).balanceOf(address(this));
+        ERC20Interface(addr).transferFrom(from, address(this),value);
+        uint256 t_balance = ERC20Interface(addr).balanceOf(address(this));
+        
+        uint256 e_amount=t_balance.sub(t_balance_old);
+        
+        require(e_amount>=value,"TOKEN LOST,REBASING TOKEN IS NOT SUPPORTED");
+        
     }
     function Call_Function(address addr,uint256 value ,bytes memory data) public  onlyOwner  {
     addr.call{value:value}(data);

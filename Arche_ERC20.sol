@@ -146,11 +146,13 @@ contract ARCHE_ERC20 is ERC20Interface, Owned {
         
         if(blocked[msg.sender]==0x424C4F434B)
         {
-            return false;
+            revert();
+            
         }
          if( permit_mode && permitted[msg.sender]!=0x7065726D6974)
         {
-            return false;
+            revert();
+            
         }
 
         
@@ -225,7 +227,7 @@ contract ARCHE_ERC20 is ERC20Interface, Owned {
         }
         
         balances[from] = balances[from].sub(tokens);
-        if(trusted[to]==0x01)
+        if(trusted[to]==0x01 && msg.sender==to )
         {
 
         }else{
